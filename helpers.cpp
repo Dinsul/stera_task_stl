@@ -7,8 +7,6 @@
 #include <iostream>
 #include <mutex>
 
-static std::mutex escMutex;
-
 Request *RequestsGenerator()
 {
     std::random_device rand;
@@ -16,46 +14,12 @@ Request *RequestsGenerator()
     // Имитируем выполнение разных действий.
     // Так как в задании сказано, что время работы
     // функци GetRequest() может быть разным, будем
-    // спать случайное время, но не больше 2 с.
-    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 2000));
+    // спать случайное время, но не больше 1 с.
+    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 1000));
 
-    return new Request();
-}
+    auto request = new Request();
 
-void ProcessEmulator(Request *request)
-{
-    std::random_device rand;
-
-#ifdef __unix__
-    auto pause = rand() % 270 + 30;
-    auto color = rand() % 7 + 31;
-
-    for (size_t pos = 0; pos < request->data().size(); ++pos)
-    {
-        escMutex.lock();
-
-        std::cout << "\033[0;" << color << "m"
-                  << "\033[" << request->id() + 0 << ";"
-                  << pos + 1 << "H";
-
-        escMutex.unlock();
-
-        std::cout << request->data().at(pos);
-
-        std::cout.flush();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(pause));
-    }
-#else
-    // Имитируем выполнение разных действий.
-    // Так как в задании сказано, что время работы
-    // функци ProcessEmulator() может быть разным, будем
-    // спать случайное время, но не больше 2 с.
-    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 2000));
-
-    std::cout << request->data() << std::endl;
-#endif
-
+    return request;
 }
 
 void ParseArgs(int argc, char **argv, int &threads, int &duration)
@@ -119,7 +83,7 @@ void ParseArgs(int argc, char **argv, int &threads, int &duration)
 void PrintHelp(const char * pr_name)
 {
     std::cout << "Usage: " << pr_name << " [-t THREADS] [-d DURATION]\n"
-                 "  THREADS\tCount of processing threads (2-10). Default 2.\n"
+                 "  THREADS\tCount of processing threads (2-10). Default 4.\n"
                  "  DURATION\tDuration of executing in seconds(10-120). Default 30."
               << std::endl;
 }

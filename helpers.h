@@ -1,10 +1,9 @@
 #pragma once
 
 class Request;
+class Stopper;
 
 Request *RequestsGenerator();
-
-void ProcessEmulator(Request *request);
 
 void ParseArgs (int argc, char **argv, int &threads, int &duration);
 

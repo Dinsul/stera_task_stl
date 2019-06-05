@@ -9,6 +9,14 @@ class Request
 
     size_t getCounter();
 
+    struct Logger
+    {
+        size_t started;
+        size_t executed;
+        size_t dryRuns;
+    };
+
+
 public:
 
     Request();
@@ -16,20 +24,21 @@ public:
 
     std::string data() const;
     size_t id() const;
+
+    static Logger &getLogger();
 };
 
 class Stopper
 {
-    bool _endSign;
-    bool _notified;
+    // Так как в ProcessRequest() Stopper передаётся по значению,
+    // а в процессе работы хочется знать актуальное состояние,
+    // флаг конца будем хранить по ссылке.
+    bool &_endSign;
 public:
-    Stopper();
+    Stopper(bool &endFlag);
 
     bool isEnd() const;
     void stop();
-
-    bool isNotified() const;
-    void setNotified(bool value);
 };
 
 // возвращает NULL, если объект stopSignal указывает на необходимость остановки,

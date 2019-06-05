@@ -19,14 +19,9 @@ int main(int argc, char **argv)
     std::vector<std::thread> processes;
     std::random_device rand;
 
-    int processesCount = 2;
-    int duration       = 30;
-    int created        = 0;
-    int executed       = 0;
-
-#ifdef __unix__
-    std::cout << "\033[0;0H\033[J" << std::endl;
-#endif
+    int     processesCount  = 4;
+    int     duration        = 30;
+    size_t  created         = 0;
 
     ParseArgs(argc, argv, processesCount, duration);
 
@@ -34,7 +29,9 @@ int main(int argc, char **argv)
               << processesCount << " processes threads" << std::endl;
 
     std::queue<Request *> requests;
-    Stopper stoper;
+
+    bool endFlag;
+    Stopper stoper{endFlag};
 
 
     std::thread creator([&]()
@@ -57,6 +54,8 @@ int main(int argc, char **argv)
             cv.notify_one();
         }
 
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+
         stoper.stop();
     });
 
@@ -76,7 +75,7 @@ int main(int argc, char **argv)
                     return !requests.empty() || stoper.isEnd();
                 });
 
-                if (requests.empty())
+                if (requests.empty() || stoper.isEnd())
                 {
                     break;
                 }
@@ -87,16 +86,6 @@ int main(int argc, char **argv)
                 lock.unlock();
 
                 ProcessRequest(reqest, stoper);
-
-                // Инкрементируем счётчик, только если
-                // обработчик не прервал свою работу.
-                // TODO
-                // Опасное место. Тут stoper.stop() может сработать
-                // после обработчика и до проверки. Надо обезопасить.
-                if (!stoper.isEnd())
-                {
-                    ++executed;
-                }
 
                 delete reqest;
             }
@@ -114,6 +103,14 @@ int main(int argc, char **argv)
         prc.join();
     }
 
+    std::cout     << "\nRequests created: " << created
+                  << "\nRequests started: " << Request::getLogger().started
+                  << "\nRequests executed: " << Request::getLogger().executed
+                  << "\nRequests run after stopping: " << Request::getLogger().dryRuns
+                  << "\nRequests unprocessed:" << created - Request::getLogger().executed
+                  << "\nRequests unprocessed in queue: " << requests.size()
+                  << std::endl;
+
     // Освобождаем память от невыполненных процессов.
     while (!requests.empty())
     {
@@ -123,14 +120,6 @@ int main(int argc, char **argv)
 
         delete reqest;
     }
-
-#ifdef __unix__
-    std::cout << "\033[" << executed << ";" << 1 << "H" << std::endl;
-#endif
-
-    std::cout << created  << " processes was creted.\n"
-              << executed << " processes was executed."
-              << std::endl;
 
     return 0;
 }
