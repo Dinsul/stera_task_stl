@@ -41,9 +41,11 @@ int main(int argc, char **argv)
         // Получаем запросы в течении времени duration
         while (runTime + duration > time(nullptr))
         {
+            auto req = GetRequest(stoper);
+
             std::unique_lock<std::mutex> lock(mx);
 
-            requests.push(GetRequest(stoper));
+            requests.push(req);
 
             ++created;
 
